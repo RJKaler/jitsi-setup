@@ -1,0 +1,66 @@
+#!/bin/bash 
+
+
+#logdir="$HOME/tmp"
+#mkdir -vp "$logdir" 
+logfile="$logdir/coturninstall.log"
+
+#error() { echo "Error - directive failed. Abort!" && exit 1; }
+
+#update() { sudo apt update -y && sudo apt upgrade -y; }
+
+#Enable firewall rules for UFW for working turnserver
+
+#{
+#if sudo ufw status | grep -q active; then 
+#    echo "firewall active - adding rules to build server..." 
+#    sudo ufw allow 80/tcp || { echo "error" && exit 1; } 
+#    sudo ufw allow 443/tcp || { echo "error" && exit 1; } 
+#    sudo ufw allow 10000/udp || { echo "error" && exit 1; } 
+#    sudo ufw allow 3478/udp || { echo "error" && exit 1; } 
+#    sudo ufw allow 10000/udp || { echo "error" && exit 1; } 
+#fi
+
+
+#coturnconfig="/etc/default/coturn" 
+
+#run update function for current package profile
+
+#update  &&\
+#install coturn for the turnserver
+#    sudo apt-get install coturn -y || { echo "error" && exit 1; }  &&\
+#Check that a config file exists then comment out the line required for a persistent server daemon     
+#if [[ -f "$coturnconfig" ]]; then 
+#sudo sed -i 's/TURNSERVER_ENABLED=1/TURNSERVER_ENABLED=1/g' "$coturnconfig" &&\
+#    echo "Adjusted config. Proceeding..." 
+#else
+#    echo "Error - config file missing" 
+#    echo "Abort" 
+#    exit 1
+#fi
+#Setup Certbot and install suggested packages  
+
+#sudo apt-get install certbot python-certbot-doc python3-certbot-apache \
+#    python3-certbot-nginx -y || { echo "error" && exit 1; } &&\
+#    echo "successfully installed certbot packages. Proceeding..."  
+#} | tee -a "$logfile" 
+
+#Install jitsi
+
+#{
+#shellcheck disable=SC2015
+#curl https://download.jitsi.org/jitsi-key.gpg.key -o jitsi-key.gpg.key   || { error; }  
+#shellcheck disable=SC2015
+#sudo gpg --output /usr/share/keyrings/jitsi-key.gpg --dearmor jitsi-key.gpg.key  || {  error; } 
+#} && echo "success" 
+
+echo "editing source list for base jitsi components..." 
+
+sourceinfo="deb [signed-by=/usr/share/keyrings/jitsi-key.gpg] https://download.jitsi.org stable/"
+
+{
+echo "$sourceinfo" | \
+    sudo tee -a /etc/apt/sources.list.d/jitsi-stable.list &&\
+    echo "successfully modified sources file" &&\
+    sudo apt update && echo "Updated packages. Proceeding..." 
+} | tee -a "$logfile" 
