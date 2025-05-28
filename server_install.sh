@@ -5,14 +5,16 @@
 update() { sudo apt-get update; }
 error() { echo "Error. Abort!" && exit 1; }
 
+logdir="$HOME/jitsi-logs"
 
-if [[ ! -d ~/logfiles ]]; then
-     mkdir -vp ~/jitsi-server-log || error
+
+if [[ ! -d "$logdir" ]]; then
+     mkdir -vp "$logdir" || error
      echo "finished creating directory for log file"
 fi
 
 
-log_file="$HOME/jitsi-server-log/server_install.log"
+log_file="$logdir/server_install.log"
 
 
 #GUIDE: https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-quickstart/
