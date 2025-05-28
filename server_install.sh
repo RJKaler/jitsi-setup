@@ -7,12 +7,12 @@ error() { echo "Error. Abort!" && exit 1; }
 
 
 if [[ ! -d ~/logfiles ]]; then
-     mkdir -vp ~/logfiles || error
+     mkdir -vp ~/jitsi-server-log || error
      echo "finished creating directory for log file"
 fi
 
 
-log_file="$HOME/logfiles/server_install.log"
+log_file="$HOME/jitsi-server-log/server_install.log"
 
 
 #GUIDE: https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-quickstart/
@@ -89,9 +89,7 @@ prosody_proc() {
         error
     fi
 
-#Add Jitsi package
-
-
+#Add Jitsi packages
 jitsi_proc() {
     curl -sL https://download.jitsi.org/jitsi-key.gpg.key | sudo sh -c 'gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg'
 echo "deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/" | sudo tee /etc/apt/sources.list.d/jitsi-stable.list
@@ -125,24 +123,15 @@ sudo ufw allow 5349/tcp || { error; }
 
 
 if ufw_proc; then
-    echo "Successfully added prosody sources"
+    echo "Successfully modified firewall for server"
     echo "updating all packages..."
     update || error
 fi
 
-echo "Successfully installed dependencies!"
+echo "Successfully completed pre-installation steps."
+echo "IMPORTANT! Type or paste: sudo apt install jitsi-meet -y"
+echo "Follow on-screen prompts to complete installation." 
 
-
-echo "Finish your installation by typing: sudo apt install jitsi-meet -y"
-
-
-#if sudo apt install jitsi-meet -y; then
-#    echo "Successfully added prosody sources"
-#    echo "updating all packages..."
-#    update || { error; }
-#else
-#    error
-#fi
-
+echo "Need more info? Log file: $log_file."
 
 } | tee -a "$log_file"
