@@ -165,11 +165,12 @@ sudo chown -R nobody:nogroup "$target"
 #download the files from source
 sudo wget https://repo1.maven.org/maven2/mysql/mysql-connector-java/8.0.30/mysql-connector-java-8.0.30.jar || { error; }
 
+filesource="/opt/mysql-connector-java-8.0.30.jar"
+targetdir="/opt/open800/webapps/openmeetings/WEB-INF/lib"
 
+#copying source files to target
 
+{ sudo cp -v "$filesource" "$targetdir" && 
+    echo "successfully copied files"; } || error
 
-
-
-
-
-
+echo "Proceeding..." 
