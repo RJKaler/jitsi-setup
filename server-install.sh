@@ -155,11 +155,18 @@ target="/opt/open800"
 
 sudo mv -v apache-openmeetings-8.0.0 "$target" || { error; }  
 
+
 #Change ownership of "target" above 
 
 sudo chown -R nobody:nogroup "$target"
 
 #Install connector program 
+
+#download the files from source
+sudo wget https://repo1.maven.org/maven2/mysql/mysql-connector-java/8.0.30/mysql-connector-java-8.0.30.jar || { error; }
+
+
+
 
 
 
