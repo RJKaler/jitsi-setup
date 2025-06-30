@@ -1,176 +1,143 @@
-#!/bin/bash -e
+#!/bin/bash -e 
 
-##shellcheck disable=all
+####################################################################
+# install-jitsi-server.sh
+#
+# Description:
+#   Jitsi Meet Deployment Script
+#
+# History:
+# 2025-06-07 Created - Richard Kaler 
+#
+#
+# This script is licensed under the GNU General Public License v3.0 or later.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see .
+#
+# Copyright (c) 2025 Runchero Federation / P.I.S.A.
+####################################################################
 
-#Source: https://cwiki.apache.org/confluence/display/openmeetings/tutorials+for+installing+openmeetings+and+tools?preview=/27838216/334761243/Installation%20OpenMeetings%208.0.0%20on%20Ubuntu%2024.04%20lts.pdf
- 
-#log_file="$PWD/server_install.log"
 
-#For repeated updates
-#update() { sudo apt-get update && sudo apt-get upgrade -y; }
-##Abort at error 
-#error() { echo "Error. Abort!" && exit 1; }
-#
-##requirements: java, nano, libre office, ImageMagick, Sox, ffmpeg, MariaDB
-#
-##update before installing packages 
-#echo "updating system. Preparing for install..." 
-#update
-#
-#echo "installing nano..." 
-#
-#if sudo apt-get install nano -y || error; then 
-#    echo "successfully installed nano" 
-#fi
-#
-#echo "installing java components..."  
-#
-#if sudo apt-get install openjdk-21-jre openjdk-21-jre-headless -y || error; then 
-#    echo "successfully installed java packages" 
-#fi
-#
-#
-#libre_install() {
-##Install libreoffice ppa 
-#yes y | sudo add-apt-repository ppa:libreoffice/ppa &&
-#echo "succcessfully added libre office repository"
-#Install libre office 
-#sudo apt-get install libreoffice -y  && 
-#echo "successfully installed libre office packages"
-#}
-#
-#echo "installing libre office components..." 
-#
-#if libre_install || error; then 
-#   echo "finished installing libre office" 
-#fi 
-#
-#echo "installing imagemagick..." 
-#
-#if sudo apt-get install imagemagick libjpeg62 zlib1g-dev -y || error; then 
-#   echo "successfully installed imagemagick" 
-#fi 
-#
-#echo "installing sox for audio..." 
-#
-#if sudo apt-get install sox -y || error; then 
-#    echo "finished installing sox" 
-#fi
-#
-#
-#echo "installing ffmpeg, vlc  and curl..." 
-#
-#if sudo apt-get install ffmpeg vlc curl -y || error; then 
-#    echo "successfully installed ffmpeg and curl" 
-#fi
-#
-#echo "installing MariaDB database server..." 
-#
-#if sudo apt-get install mariadb-server -y || error; then 
-#    echo "server installed - starting daemon..." 
-#    if sudo systemctl enable --now mariadb; then
-#       echo "successfully started server daemon"
-#   else 
-#       error 
-#    fi
-#fi
-#
-#echo "Configuring MariaDB database" 
-#echo "================================================================="
-#while : 
-#do
-#    read -resp "Create password for database root user (please keep note of password): " password1
-#    read -resp "Confirm password: " password2
-#    if [ "$password1" = "$password2" ]; then
-#        db_password="$password1"
-#        echo "Passwords match. Success!" 
-#        break 
-#    else
-#        echo "Passwords do not match. Please try again."
-#    fi
-#done
-#
-#echo "Now applying password to database" 
-#
-##set password for mysql 
-#if sudo mysqladmin -u root password "$db_password" || error; then 
-#    echo "successfully set root password" 
-#fi
-#
-#
-#echo "==> A database has been installed but the setup is incomplete." 
-#echo "==> In order for OpenMeetings to work, the database setup process must be completed."
-#echo "==> You can continue setting up the database or exit this program now."
-#echo "==> Do you want to continue? (y|n): " 
-#read -rep "==> " ans
-#
-#if [[ "$ans" =~ ^(y|Y|yes|Yes)$ ]]; then 
-#    echo "OK - proceeding" 
-#else 
-#    echo "OK - exiting script now" 
-#    exit 0
-#fi
-#
-#echo -e "\n======> Please follow the instructions below <======
-#
-#1.) Log into database (WITHOUT sudo) using the password you just created. Type: mysql -u root -p 
-#
-#2.) Enter the following once logged in: 
-#
-#MariaDB [(none)]> CREATE DATABASE open800 DEFAULT CHARACTER SET 'utf8';
-#
-#(IMPORTANT: We are creating a new password. Unless the only user is root, for optimal security, use a different password below. Please make note of your password below as it will be used later. Note, \"[username]\" below can be an already existing user. If that user does not already exist elsewhere on the system, it will be created here.) 
-#
-#MariaDB [(none)]> GRANT ALL PRIVILEGES ON open800.* TO '[username]'@'localhost' IDENTIFIED BY '1a2B3c4D' WITH GRANT OPTION;
-#
-#MariaDB [(none)]> quit
-#(At this point, we will have exited the database to proceed with the remaining installation steps.)
-#===================================================\n"
-#
-#read -rep "You can proceed once the steps above are finished.
-#Ready to proceed (y|n): " ans
-#
-#if [[ "$ans" =~ ^(y|Y|yes|Yes)$ ]]; then 
-#    echo "OK - proceeding" 
-#else 
-#    echo "OK - exiting script now" 
-#    exit 0
+#This should suffice for a single deployment Jitsi Meet server - but I would not go over two video bridges with this.
+
+update() { sudo apt-get update --allow-insecure-repositories; }
+error() { echo "Error. Abort!" && exit 1; }
+
+#logdir="$HOME/jitsi-logs"
+
+
+#if [[ ! -d "$logdir" ]]; then
+#     mkdir -vp "$logdir" || error
+#     echo "finished creating directory for log file"
 #fi
 
-#Install OpenMeetings 
 
-#change directories to /opt to finish installation
-pushd /opt &>/dev/null
+log_file="$PWD/server_install.log"
 
 
-sudo wget https://archive.apache.org/dist/openmeetings/8.0.0/bin/apache-openmeetings-8.0.0.tar.gz || { error; }  &&
+#GUIDE: https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-quickstart/
 
-echo "Successfully downloaded OpenMeetings archive. Attempting to extract files for install..."
+#Required packages and repository updates (GUIDE)
+#
+{
 
-sudo tar -xzvf apache-openmeetings-8.0.0.tar.gz || { error; } &&
-
-echo "Successfully extracted OpenMeetings archive." 
-
-target="/opt/open800"
-
-sudo mv -v apache-openmeetings-8.0.0 "$target" || { error; }  
+if ! command -v curl; then
+	sudo apt-get install curl -y || { echo "error!" && exit 1; }
+fi
 
 
-#Change ownership of "target" above 
+#install apache
+apache_install() {
+	update
+	sudo apt-get install apache2 -y || error
+}
 
-sudo chown -R nobody:nogroup "$target"
+apache_install
 
-#Install connector program 
 
-#download the files from source
-sudo wget https://repo1.maven.org/maven2/mysql/mysql-connector-java/8.0.30/mysql-connector-java-8.0.30.jar || { error; }
+require_proc() {
+    echo "refreshing package list"
+    #shellcheck disable=SC2015
+    update &&
+        # Ensure support for apt repositories served via HTTPS
+            sudo apt-get install apt-transport-https -y || { error; } &&
+                yes y | sudo apt-add-repository universe -y || { error; } &&
+            echo "installing Socat (for SOcket CAT) for stand-alone server deployment..."
+            sudo apt-get install socat -y || error
+            }
 
-filesource="/opt/mysql-connector-java-8.0.30.jar"
-targetdir="/opt/open800/webapps/openmeetings/WEB-INF/lib"
+            echo "installing basic packages for server..."
 
-#copying source files to target
+            if require_proc; then
+                echo "successfully installed packages and updated package list"
+            else
+                error
+            fi
 
-{ sudo cp -v "$filesource" "$targetdir" && 
-    echo "successfully copied files"; } || error
 
-echo "Proceeding..." 
+#Add Jitsi packages
+jitsi_proc() {
+    curl -sL https://download.jitsi.org/jitsi-key.gpg.key | sudo sh -c 'gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg'
+echo "deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/" | sudo tee /etc/apt/sources.list.d/jitsi-stable.list
+}
+
+    echo "Installing jitsi dependencies..."
+
+
+if jitsi_proc || error; then
+    echo "Successfully added prosody sources"
+    echo "updating all packages..."
+    update || error
+else
+    error
+fi
+
+#configure ufw
+
+sudo ufw enable || error
+
+#shellcheck disable=SC2015
+
+ufw_proc() {
+sudo ufw allow 80/tcp || { error; }
+sudo ufw allow 443/tcp || { error; }
+sudo ufw allow 10000/udp || { error; }
+sudo ufw allow 22/tcp || { error; }
+sudo ufw allow 3478/udp || { error; }
+sudo ufw allow 5349/tcp || { error; }
+}
+
+
+if ufw_proc; then
+    echo "Successfully modified firewall for server"
+    echo "updating all packages..."
+    update || error
+fi
+
+echo "Successfully completed pre-installation steps."
+echo "-------------------------------------------------------------------------"
+echo "IMPORTANT! Type or paste: "
+echo "-------------------------------------------------------------------------"
+echo ""
+echo "   sudo apt install jitsi-meet -y"
+echo ""
+echo " - Follow on-screen prompts to complete installation."
+echo "-------------------------------------------------------------------------"
+echo "                        MANDATORY REBOOT PLEASE"Add commentMore actions
+echo "-------------------------------------------------------------------------"
+
+echo "Need more info? Log file: $log_file."
+
+} | tee -a "$log_file"
+
