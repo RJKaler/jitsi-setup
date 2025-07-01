@@ -134,7 +134,7 @@ echo "   sudo apt install jitsi-meet -y"
 echo ""
 echo " - Follow on-screen prompts to complete installation."
 echo "-------------------------------------------------------------------------"
-echo "                        MANDATORY REBOOT PLEASE"Add commentMore actions
+echo "                        MANDATORY REBOOT PLEASE                          "
 echo "-------------------------------------------------------------------------"
 
 echo "Need more info? Log file: $log_file."
