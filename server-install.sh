@@ -73,7 +73,7 @@ require_proc() {
         # Ensure support for apt repositories served via HTTPS
             sudo apt-get install apt-transport-https -y || { error; } &&
                 yes y | sudo apt-add-repository universe -y || { error; } &&
-            echo "installing Socat (for SOcket CAT) for stand-alone server deployment..."
+            echo "installing Socat (for Socket CAT) for stand-alone server deployment..."
             sudo apt-get install socat -y || error
             }
 
