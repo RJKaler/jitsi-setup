@@ -1,0 +1,24 @@
+#!/bin/bash
+
+#NOTE: This is an incomplete draft and basically a starting point with a prompt to be implemented later. 
+#This is NOT a full script 
+
+echo "Jitsi can be installed as a basic server for peer to peer meetings. Another option is to install Jitsi with additional
+features, including the ability to stream and record video conferences."
+
+read -rep "Include additional features with install? (y|n):" additional
+
+echo "[code]"
+
+addition_proc() {
+
+
+true
+}
+
+
+if [[ "$additional" =~ ^(Y|y|yes|Yes)$ ]]; then
+    proc
+else
+    echo "OK"
+fi
