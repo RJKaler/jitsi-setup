@@ -1,4 +1,4 @@
-#!/bin/bash -e 
+#!/bin/bash -e
 
 ####################################################################
 # install-jitsi-server.sh
@@ -7,7 +7,7 @@
 #   Jitsi Meet Deployment Script
 #
 # History:
-# 2025-06-07 Created - Richard Kaler 
+# 2025-06-07 Created - Richard Kaler
 #
 #
 # This script is licensed under the GNU General Public License v3.0 or later.
@@ -37,19 +37,11 @@ error() { echo "Error. Abort!" && exit 1; }
 #logdir="$HOME/jitsi-logs"
 
 
-#if [[ ! -d "$logdir" ]]; then
-#     mkdir -vp "$logdir" || error
-#     echo "finished creating directory for log file"
-#fi
-
-
 log_file="$PWD/server_install.log"
 
 
 #GUIDE: https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-quickstart/
 
-#Required packages and repository updates (GUIDE)
-#
 {
 
 if ! command -v curl; then
@@ -95,10 +87,10 @@ echo "deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jit
     echo "Installing jitsi dependencies..."
 
 
-if jitsi_proc || error; then
+if jitsi_proc; then
     echo "Successfully added prosody sources"
     echo "updating all packages..."
-    update || error
+    update
 else
     error
 fi
@@ -122,7 +114,9 @@ sudo ufw allow 5349/tcp || { error; }
 if ufw_proc; then
     echo "Successfully modified firewall for server"
     echo "updating all packages..."
-    update || error
+    update
+else
+    error
 fi
 
 echo "Successfully completed pre-installation steps."
@@ -140,4 +134,3 @@ echo "-------------------------------------------------------------------------"
 echo "Need more info? Log file: $log_file."
 
 } | tee -a "$log_file"
-
