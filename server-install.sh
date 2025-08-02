@@ -120,6 +120,19 @@ if ufw_proc; then
 else
     error
 fi
+#NOTE: End of basic install components; Note, server can run without Jibri add-ons below 
+
+#Jibri source: https://github.com/jitsi/jibri
+#JIBRI ADD-ONS: 
+
+#ffmpeg install 
+echo "Attempting to install ffmpeg..." 
+
+if sudo apt-get install ffmpeg -y; then 
+    echo "Successfully installed ffmpeg" 
+else 
+    error 
+fi
 
 echo "Successfully completed pre-installation steps."
 echo "-------------------------------------------------------------------------"
