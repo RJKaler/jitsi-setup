@@ -4,7 +4,7 @@
 # install-jitsi-server.sh
 #
 # Description:
-#   Jitsi Meet Deployment Script
+# Jitsi Meet Deployment Script
 #
 # History:
 # 2025-06-07 Created - Richard Kaler
