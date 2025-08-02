@@ -1,0 +1,21 @@
+#source: https://github.com/jitsi/jibri
+
+
+
+Note: the following components are optional but required for Jibri as an enhancement to standard features 
+
+#ffmpeg with x11 support 
+
+
+ffmpeg_proc() {
+sudo add-apt-repository ppa:mc3man/trusty-media
+sudo apt-get update 
+sudo apt-get install ffmpeg -y
+}
+
+
+if ffmpeg_proc; then 
+    echo "success" 
+else 
+    error 
+fi
