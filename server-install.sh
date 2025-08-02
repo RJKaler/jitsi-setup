@@ -31,7 +31,9 @@
 
 #This should suffice for a single deployment Jitsi Meet server - but I would not go over two video bridges with this.
 
-update() { sudo apt-get update --allow-insecure-repositories; }
+#update() { sudo apt-get update --allow-insecure-repositories; }
+update() { sudo apt-get update; }
+
 error() { echo "Error. Abort!" && exit 1; }
 
 #logdir="$HOME/jitsi-logs"
