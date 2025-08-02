@@ -129,7 +129,8 @@ fi
 echo "Attempting to install ffmpeg..." 
 
 if sudo apt-get install ffmpeg -y; then 
-    echo "Successfully installed ffmpeg" 
+    echo "Successfully installed ffmpeg"
+    update
 else 
     error 
 fi
