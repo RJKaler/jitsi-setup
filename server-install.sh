@@ -75,6 +75,7 @@ require_proc() {
 
             if require_proc; then
                 echo "successfully installed packages and updated package list"
+		update
             else
                 error
             fi
