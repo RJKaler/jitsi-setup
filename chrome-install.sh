@@ -118,4 +118,4 @@ if chrome_driver_install; then
 else 
     error 
 fi
-}
+
