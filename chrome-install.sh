@@ -17,7 +17,6 @@ update
 
 apt-get install google-chrome-stable -y
 
-
 echo "holding package to protect from auto-removals" &&
 sudo apt-mark hold google-chrome-stable &&
 #Hide chrome warnings
