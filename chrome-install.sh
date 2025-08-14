@@ -11,19 +11,6 @@ sudo apt-mark hold google-chrome-stable &&
 { echo '{ "CommandLineFlagSecurityWarningsEnabled": false }' \
 >> /etc/opt/chrome/policies/managed/managed_policies.json; } || error 
 }
-#!/bin/bash -e 
-
-
-#shellcheck disable=SC2015
-chrome_install() {
-sudo apt-get install google-chrome-stable -y &&
-echo "holding package to protect from auto-removals" &&
-sudo apt-mark hold google-chrome-stable &&
-#Hide chrome warnings
-{ sudo mkdir -vp /etc/opt/chrome/policies/managed || error; } &&
-{ echo '{ "CommandLineFlagSecurityWarningsEnabled": false }' \
->> /etc/opt/chrome/policies/managed/managed_policies.json; } || error 
-}
 
 if chrome_install; then 
     echo -e "finished installing chrome stable.\nInstalling chromedriver next..." 
