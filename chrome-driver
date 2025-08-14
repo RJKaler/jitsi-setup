@@ -1,0 +1,52 @@
+#!/bin/bash -e 
+
+
+update() { sudo apt-get update; }
+
+error() { echo "Error. Abort!" && exit 1; }
+
+chrome_driver() {
+    CHROME_VER_FULL=$(dpkg -s google-chrome-stable \
+      | awk '/^Version: /{print $2}')
+    CHROME_VER_MAJOR_MINOR_PATCH=$(echo "$CHROME_VER_FULL" | cut -d. -f1-3)
+
+    # 2. Base URL for Chrome for Testing API.
+    CFT_BASE="https://googlechromelabs.github.io/chrome-for-testing"
+
+    # 3. Fetch the known-good versions JSON and find the matching ChromeDriver (jq 1.5+ compatible).
+    CHROMEDRIVER_URL=$(curl -s "$CFT_BASE/known-good-versions-with-downloads.json" \
+      | jq -r --arg VER "$CHROME_VER_MAJOR_MINOR_PATCH" \
+          '.versions[].downloads.chromedriver[]? | select(.url | test($VER)) | .url' \
+      | grep linux64 \
+      | tail -1)
+
+    if [[ -z "$CHROMEDRIVER_URL" ]]; then
+      echo "No matching ChromeDriver found for version $CHROME_VER_MAJOR_MINOR_PATCH"
+      exit 1
+    fi
+
+    echo "Found ChromeDriver URL: $CHROMEDRIVER_URL"
+
+    # 4. Download and install it.
+    TMPDIR=$(mktemp -d)
+
+    # remove TMPDIR with trap
+    trap 'rm -rv "$TMPDIR"' EXIT
+
+    wget -q -O "$TMPDIR/chromedriver-linux64.zip" "$CHROMEDRIVER_URL"
+    unzip -o "$TMPDIR/chromedriver-linux64.zip" -d "$TMPDIR"
+    sudo mv -v "$TMPDIR/chromedriver-linux64/chromedriver" /usr/local/bin/
+    sudo chown root:root /usr/local/bin/chromedriver || error
+    sudo chmod 755 /usr/local/bin/chromedriver || error
+
+    echo "ChromeDriver installed successfully at /usr/local/bin/chromedriver"
+}
+
+if chrome_driver; then 
+    echo "updating system..." 
+    update
+else 
+    error
+fi
+
+echo "Success! Finished"
