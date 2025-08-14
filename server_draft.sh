@@ -9,230 +9,402 @@
 # History:
 # 2025-06-07 Created - Richard Kaler
 #
-# License:
-# GNU GPL v3.0 or later
+#
+# This script is licensed under the GNU General Public License v3.0 or later.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see .
+#
+# Copyright (c) 2025 Runchero Federation / P.I.S.A.
 ####################################################################
 
+
+#This should suffice for a single deployment Jitsi Meet server - but I would not go over two video bridges with this.
+
+#update() { sudo apt-get update --allow-insecure-repositories; }
 update() { sudo apt-get update; }
+
 error() { echo "Error. Abort!" && exit 1; }
+
+#logdir="$HOME/jitsi-logs"
+
 
 log_file="$PWD/server_install.log"
 
-{
-# Update system
-update
 
-if ! command -v curl &>/dev/null; then
-    sudo apt-get install curl -y || { echo "error!" && exit 1; }
-    update
+#GUIDE: https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-quickstart/
+
+{
+
+if ! command -v curl; then
+	sudo apt-get install curl -y || { echo "error!" && exit 1; }
 fi
 
-# Install Apache
+
+#install apache
 apache_install() {
-    sudo apt-get install apache2 -y || error
-    update
+	update
+	sudo apt-get install apache2 -y || error
 }
+
 apache_install
 
-# Install basic dependencies
-require_proc() {
-    echo "Refreshing package list..."
-    update &&
-    sudo apt-get install apt-transport-https -y || error
-    sudo apt-add-repository universe -y || error
-    echo "Installing Socat..."
-    sudo apt-get install socat -y || error
-}
-echo "Installing basic packages for server..."
-if require_proc; then
-    echo "Successfully installed packages and updated package list"
-    update
-else
-    error
-fi
 
-# Add Jitsi repo
+require_proc() {
+    echo "refreshing package list"
+    #shellcheck disable=SC2015
+    update &&
+        # Ensure support for apt repositories served via HTTPS
+            sudo apt-get install apt-transport-https -y || { error; } &&
+                yes y | sudo apt-add-repository universe -y || { error; } &&
+            echo "installing Socat (for Socket CAT) for stand-alone server deployment..."
+            sudo apt-get install socat -y || error
+            }
+
+            echo "installing basic packages for server..."
+
+            if require_proc; then
+                echo "successfully installed packages and updated package list"
+		update
+            else
+                error
+            fi
+
+
+#Add Jitsi packages
 jitsi_proc() {
     curl -sL https://download.jitsi.org/jitsi-key.gpg.key | sudo sh -c 'gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg'
-    echo "deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/" | sudo tee /etc/apt/sources.list.d/jitsi-stable.list
+echo "deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/" | sudo tee /etc/apt/sources.list.d/jitsi-stable.list
 }
-echo "Installing Jitsi dependencies..."
+
+    echo "Installing jitsi dependencies..."
+
+
 if jitsi_proc; then
-    echo "Successfully added Jitsi sources"
+    echo "Successfully added prosody sources"
+    echo "updating all packages..."
     update
 else
     error
 fi
 
-# Configure UFW
+#configure ufw
+
 sudo ufw enable || error
+
+#shellcheck disable=SC2015
+
 ufw_proc() {
-    sudo ufw allow 80/tcp || error
-    sudo ufw allow 443/tcp || error
-    sudo ufw allow 10000/udp || error
-    sudo ufw allow 22/tcp || error
-    sudo ufw allow 3478/udp || error
-    sudo ufw allow 5349/tcp || error
+sudo ufw allow 80/tcp || { error; }
+sudo ufw allow 443/tcp || { error; }
+sudo ufw allow 10000/udp || { error; }
+sudo ufw allow 22/tcp || { error; }
+sudo ufw allow 3478/udp || { error; }
+sudo ufw allow 5349/tcp || { error; }apt-mark hold google-chrome-stable
+
 }
+
+
 if ufw_proc; then
-    echo "Successfully modified firewall"
+    echo "Successfully modified firewall for server"
+    echo "updating all packages..."
     update
 else
     error
 fi
+#NOTE: End of basic install components; Note, server can run without Jibri add-ons below 
 
-# Install ffmpeg
-echo "Installing ffmpeg..."
-if sudo apt-get install ffmpeg -y; then
+#Jibri source: https://github.com/jitsi/jibri
+#JIBRI ADD-ONS: 
+
+#ffmpeg install 
+echo "Attempting to install ffmpeg..." 
+
+if sudo apt-get install ffmpeg -y; then 
     echo "Successfully installed ffmpeg"
     update
+else 
+    error 
+fi
+
+#chrome packages and required parameters 
+#google-chrome-stable
+#apt-mark hold google-chrome-stable
+
+echo "Adding chrome packages for jibri..."  
+
+chrome_install() {
+sudo apt-get install google-chrome-stable -y &&
+echo "holding package to protect from auto-removals" &&
+sudo apt-mark hold google-chrome-stable &&
+#Hide chrome warnings
+{ sudo mkdir -vp /etc/opt/chrome/policies/managed || error; } &&
+{ echo '{ "CommandLineFlagSecurityWarningsEnabled": false }' | \
+tee -a /etc/opt/chrome/policies/managed/managed_policies.json; } || error 
+}
+
+if chrome_install; then 
+    echo -e "finished installing chrome stable.\nInstalling chromedriver next..." 
+    update 
+else 
+    error 
+fi    
+
+
+
+
+
+#CHROME_VER=$(dpkg -s google-chrome-stable | egrep "^Version" | cut -d " " -f2 | cut -d. -f1-3)
+#CHROMELAB_LINK="https://googlechromelabs.github.io/chrome-for-testing"
+#CHROMEDRIVER_LINK=$(curl -s $CHROMELAB_LINK/known-good-versions-with-downloads.json | jq -r ".versions[].downloads.chromedriver | select(. != null) | .[].url" | grep linux64 | grep "$CHROME_VER" | tail -1)
+#wget -O /tmp/chromedriver-linux64.zip $CHROMEDRIVER_LINK
+#
+#rm -rf /tmp/chromedriver-linux64
+#unzip -o /tmp/chromedriver-linux64.zip -d /tmp
+#mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/
+#chown root:root /usr/local/bin/chromedriver
+#chmod 755 /usr/local/bin/chromedriver
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+#!/bin/bash -e
+
+####################################################################
+# install-jitsi-server.sh
+#
+# Description:
+# Jitsi Meet Deployment Script
+#
+# History:
+# 2025-06-07 Created - Richard Kaler
+#
+#
+# This script is licensed under the GNU General Public License v3.0 or later.
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see .
+#
+# Copyright (c) 2025 Runchero Federation / P.I.S.A.
+####################################################################
+
+
+#This should suffice for a single deployment Jitsi Meet server - but I would not go over two video bridges with this.
+
+#update() { sudo apt-get update --allow-insecure-repositories; }
+update() { sudo apt-get update; }
+
+error() { echo "Error. Abort!" && exit 1; }
+
+#logdir="$HOME/jitsi-logs"
+
+
+log_file="$PWD/server_install.log"
+
+
+#GUIDE: https://jitsi.github.io/handbook/docs/devops-guide/devops-guide-quickstart/
+
+{
+
+if ! command -v curl; then
+	sudo apt-get install curl -y || { echo "error!" && exit 1; }
+fi
+
+
+#install apache
+apache_install() {
+	update
+	sudo apt-get install apache2 -y || error
+}
+
+apache_install
+
+
+require_proc() {
+    echo "refreshing package list"
+    #shellcheck disable=SC2015
+    update &&
+        # Ensure support for apt repositories served via HTTPS
+            sudo apt-get install apt-transport-https -y || { error; } &&
+                yes y | sudo apt-add-repository universe -y || { error; } &&
+            echo "installing Socat (for Socket CAT) for stand-alone server deployment..."
+            sudo apt-get install socat -y || error
+            }
+
+            echo "installing basic packages for server..."
+
+            if require_proc; then
+                echo "successfully installed packages and updated package list"
+		update
+            else
+                error
+            fi
+
+
+#Add Jitsi packages
+jitsi_proc() {
+    curl -sL https://download.jitsi.org/jitsi-key.gpg.key | sudo sh -c 'gpg --dearmor > /usr/share/keyrings/jitsi-keyring.gpg'
+echo "deb [signed-by=/usr/share/keyrings/jitsi-keyring.gpg] https://download.jitsi.org stable/" | sudo tee /etc/apt/sources.list.d/jitsi-stable.list
+}
+
+    echo "Installing jitsi dependencies..."
+
+
+if jitsi_proc; then
+    echo "Successfully added prosody sources"
+    echo "updating all packages..."
+    update
 else
     error
 fi
 
-# Install Chromium and configure Jibri for it
-chromium_proc() {
-CONFIG="/etc/jitsi/jibri/jibri.conf"
-CHROMIUM_PATH="/usr/bin/chromium-browser"
+#configure ufw
 
-if ! command -v chromium-browser &>/dev/null; then
-    echo "[INFO] Installing Chromium..."
-    sudo apt update && sudo apt install -y chromium-browser chromium-chromedriver
-fi
+sudo ufw enable || error
 
-# Create or update jibri.conf for Chromium
-if [ ! -f "$CONFIG" ]; then
-    echo "[INFO] Creating $CONFIG"
-    sudo tee "$CONFIG" > /dev/null <<EOF
-jibri {
-  chrome {
-    executable-path = "$CHROMIUM_PATH"
-    flags = [
-      "--use-fake-ui-for-media-stream",
-      "--start-maximized",
-      "--kiosk",
-      "--enabled",
-      "--disable-infobars",
-      "--autoplay-policy=no-user-gesture-required",
-      "--no-sandbox",
-      "--disable-dev-shm-usage"
-    ]
-  }
+#shellcheck disable=SC2015
+
+ufw_proc() {
+sudo ufw allow 80/tcp || { error; }
+sudo ufw allow 443/tcp || { error; }
+sudo ufw allow 10000/udp || { error; }
+sudo ufw allow 22/tcp || { error; }
+sudo ufw allow 3478/udp || { error; }
+sudo ufw allow 5349/tcp || { error; }apt-mark hold google-chrome-stable
+
 }
-EOF
-else
-    echo "[INFO] Updating $CONFIG for Chromium..."
-    if grep -q "chrome" "$CONFIG"; then
-        sudo sed -i "s|executable-path = .*|executable-path = \"$CHROMIUM_PATH\"|" "$CONFIG"
-    else
-        sudo tee -a "$CONFIG" > /dev/null <<EOF
 
-chrome {
-  executable-path = "$CHROMIUM_PATH"
-  flags = [
-    "--use-fake-ui-for-media-stream",
-    "--start-maximized",
-    "--kiosk",
-    "--enabled",
-    "--disable-infobars",
-    "--autoplay-policy=no-user-gesture-required",
-    "--no-sandbox",
-    "--disable-dev-shm-usage"
-  ]
-}
-EOF
-    fi
-fi
 
-# Disable Chromium security warnings
-sudo mkdir -vp /etc/chromium/policies/managed
-echo '{ "CommandLineFlagSecurityWarningsEnabled": false }' | sudo tee /etc/chromium/policies/managed/managed_policies.json
-update
-}
-if chromium_proc; then
-    echo "Successfully installed and configured Chromium"
+if ufw_proc; then
+    echo "Successfully modified firewall for server"
+    echo "updating all packages..."
+    update
 else
     error
 fi
+#NOTE: End of basic install components; Note, server can run without Jibri add-ons below 
 
-# Install Jibri and configure systemd + XMPP
-jibri_proc() {
-SERVICE_FILE="/etc/systemd/system/jibri.service"
-CONFIG="/etc/jitsi/jibri/jibri.conf"
+#Jibri source: https://github.com/jitsi/jibri
+#JIBRI ADD-ONS: 
 
-sudo apt-get install jibri -y || error
+#ffmpeg install 
+echo "Attempting to install ffmpeg..." 
 
-# Patch systemd to use Chromium instead of Google Chrome
-if [ -f "$SERVICE_FILE" ]; then
-    echo "[INFO] Patching Jibri systemd unit to use Chromium..."
-    sudo sed -i 's|/usr/bin/google-chrome|/usr/bin/chromium-browser|' "$SERVICE_FILE"
-    sudo systemctl daemon-reload
+if sudo apt-get install ffmpeg -y; then 
+    echo "Successfully installed ffmpeg"
+    update
+else 
+    error 
 fi
 
-# Change these defaults or make them user inputs
-JITSI_DOMAIN="yourdomain.com"
-XMPP_SERVER_IP="1.2.3.4"
-JIBRI_AUTH_USER="jibri"
-JIBRI_AUTH_PASS="jibriauthpass"
-RECORDER_USER="recorder"
-RECORDER_PASS="jibrirecorderpass"
+#chrome packages and required parameters 
+#google-chrome-stable
+#apt-mark hold google-chrome-stable
 
-echo "[INFO] Configuring Jibri XMPP environment..."
-if ! grep -q "api" "$CONFIG"; then
-sudo tee -a "$CONFIG" > /dev/null <<EOF
-api {
-  xmpp {
-    environments = [
-      {
-        name = "$JITSI_DOMAIN"
-        xmpp-server-hosts = ["$XMPP_SERVER_IP"]
-        xmpp-domain = "$JITSI_DOMAIN"
-        control-login {
-          domain = "auth.$JITSI_DOMAIN"
-          username = "$JIBRI_AUTH_USER"
-          password = "$JIBRI_AUTH_PASS"
-          port = 5222
-        }
-        control-muc {
-          domain = "internal.auth.$JITSI_DOMAIN"
-          room-name = "JibriBrewery"
-          nickname = "jibri-\${XMPP_SERVER_IP//./-}"
-        }
-        call-login {
-          domain = "recorder.$JITSI_DOMAIN"
-          username = "$RECORDER_USER"
-          password = "$RECORDER_PASS"
-        }
-        strip-from-room-domain = "conference."
-        trust-all-xmpp-certs = true
-        usage-timeout = 0
-      }
-    ]
-  }
+echo "Adding chrome packages for jibri..."  
+
+chrome_install() {
+sudo apt-get install google-chrome-stable -y &&
+echo "holding package to protect from auto-removals" &&
+sudo apt-mark hold google-chrome-stable &&
+#Hide chrome warnings
+{ sudo mkdir -vp /etc/opt/chrome/policies/managed || error; } &&
+{ echo '{ "CommandLineFlagSecurityWarningsEnabled": false }' | \
+tee -a /etc/opt/chrome/policies/managed/managed_policies.json; } || error 
 }
-EOF
-else
-    echo "[INFO] XMPP config already exists, skipping..."
-fi
 
-sudo systemctl restart jibri
-}
-if jibri_proc; then
-    echo "Successfully installed and configured Jibri"
-else
-    error
-fi
+if chrome_install; then 
+    echo -e "finished installing chrome stable.\nInstalling chromedriver next..." 
+    update 
+else 
+    error 
+fi    
+
+
+#CHROME_VER=$(dpkg -s google-chrome-stable | egrep "^Version" | cut -d " " -f2 | cut -d. -f1-3)
+#CHROMELAB_LINK="https://googlechromelabs.github.io/chrome-for-testing"
+#CHROMEDRIVER_LINK=$(curl -s $CHROMELAB_LINK/known-good-versions-with-downloads.json | jq -r ".versions[].downloads.chromedriver | select(. != null) | .[].url" | grep linux64 | grep "$CHROME_VER" | tail -1)
+#wget -O /tmp/chromedriver-linux64.zip $CHROMEDRIVER_LINK
+#
+#rm -rf /tmp/chromedriver-linux64
+#unzip -o /tmp/chromedriver-linux64.zip -d /tmp
+#mv /tmp/chromedriver-linux64/chromedriver /usr/local/bin/
+#chown root:root /usr/local/bin/chromedriver
+#chmod 755 /usr/local/bin/chromedriver
+
+
 
 echo "Successfully completed pre-installation steps."
 echo "-------------------------------------------------------------------------"
-echo "IMPORTANT! Type or paste:"
+echo "IMPORTANT! Type or paste: "
+echo "-------------------------------------------------------------------------"
 echo ""
 echo "   sudo apt install jitsi-meet -y"
 echo ""
-echo "- Follow on-screen prompts to complete installation."
+echo " - Follow on-screen prompts to complete installation."
 echo "-------------------------------------------------------------------------"
-echo "MANDATORY REBOOT AFTER COMPLETION"
+echo "                        MANDATORY REBOOT PLEASE                          "
 echo "-------------------------------------------------------------------------"
+
+echo "Need more info? Log file: $log_file."
+
+} | tee -a "$log_file"
+
+
+
+
+echo "Successfully completed pre-installation steps."
+echo "-------------------------------------------------------------------------"
+echo "IMPORTANT! Type or paste: "
+echo "-------------------------------------------------------------------------"
+echo ""
+echo "   sudo apt install jitsi-meet -y"
+echo ""
+echo " - Follow on-screen prompts to complete installation."
+echo "-------------------------------------------------------------------------"
+echo "                        MANDATORY REBOOT PLEASE                          "
+echo "-------------------------------------------------------------------------"
+
 echo "Need more info? Log file: $log_file."
 
 } | tee -a "$log_file"
