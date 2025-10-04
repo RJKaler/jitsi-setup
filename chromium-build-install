@@ -1,0 +1,11 @@
+!/bin/bash
+
+git clone https://github.com/scheib/chromium-latest-linux
+
+pushd ./chromium-latest-linux &>/dev/null || { echo 'error';  exit 1; }
+
+./update-and-run.sh
+
+sudo ln -s ./1525248/chrome-linux/chrome /usr/local/bin/
+
+chromium --version
