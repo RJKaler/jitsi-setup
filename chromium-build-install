@@ -1,11 +1,15 @@
-#!/bin/bash
+#!/bin/bash -ex
 
 git clone https://github.com/scheib/chromium-latest-linux
 
-pushd ./chromium-latest-linux &>/dev/null || { echo 'error';  exit 1; }
+echo "contents of chromedriver-work:" 
 
-./update-and-run.sh
+./chromium-latest-linux/update-and-run.sh && echo "finished"
 
-sudo ln -s ./1525248/chrome-linux/chrome /usr/local/bin/
+sudo find ./chromium-latest-linux -name 'chrome' -exec mv -v {} /usr/local/bin/chromium \; && echo "moved" 
 
-chromium --version
+if chromium --version; then 
+    echo "success" 
+else 
+    echo "error" 
+fi
