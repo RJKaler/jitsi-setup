@@ -1,6 +1,7 @@
 #!/bin/bash -ex
 
 #NOTE: This is for the Chromium browser 
+#Installs the most recent version of Chromium 
 
 git clone https://github.com/scheib/chromium-latest-linux
 
