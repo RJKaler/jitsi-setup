@@ -22,10 +22,3 @@ ls -l /usr/local/bin/
 
 
 
-#if chromium --version; then 
-#    echo "success" 
-#else 
-#    echo "error" 
-#fi
-
-fi
